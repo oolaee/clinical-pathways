@@ -1,0 +1,20 @@
+/* Global reset + base — mirrors the prototype's <helmet> styles. */
+html, body { margin: 0; padding: 0; background: #fcfbfb; }
+* { box-sizing: border-box; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  color: #171810;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+#root { height: 100vh; }
+input, select, textarea, button { font-family: 'DM Sans', sans-serif; }
+
+@keyframes olpulse { 0% { opacity: .45 } 50% { opacity: 1 } 100% { opacity: .45 } }
+
+/* Print-ready visit summary: hide the app chrome, show only the printable sheet. */
+@media print {
+  @page { margin: 0.5cm; }
+  body { background: #ffffff; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

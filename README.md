@@ -1,25 +1,85 @@
-# CODING AGENTS: READ THIS FIRST
+# Clinical Pathways
 
-This is a **handoff bundle** from Claude Design (claude.ai/design).
+Provider-facing **clinical decision support** desktop app for Olympia Aesthetics &
+Wellness (Palm Harbor, FL). This is the real React implementation of the
+high-fidelity design that was prototyped in Claude Design — see
+[`design-source/`](./design-source) for the original handoff bundle.
 
-A user mocked up designs in HTML/CSS/JS using an AI design tool, then exported this bundle so a coding agent can implement the designs for real.
+It is internal, provider-facing software — never patient-facing. The product
+vision is a fully local desktop app (Tauri, encrypted SQLite, local Ollama).
+This repository is the **web frontend** for that: the complete, navigable UI with
+mock processing and seeded sample patients. No real authentication, PDF parsing,
+or AI calls — all clinical logic is deterministic and rules-based.
 
-## What you should do — IMPORTANT
+## Stack
 
-**Read the chat transcripts first.** There are 2 chat transcript(s) in `chats/`. The transcripts show the full back-and-forth between the user and the design assistant — they tell you **what the user actually wants** and **where they landed** after iterating. Don't skip them. The final HTML files are the output, but the chat is where the intent lives.
+- **React 18 + TypeScript + Vite**
+- No UI framework — inline styles ported faithfully from the design so the output
+  is pixel-identical. Fonts (Cormorant Garamond for titles, DM Sans for
+  everything else) load from Google Fonts.
 
-**Read `project/Clinical Pathways.dc.html` in full.** The user had this file open when they triggered the handoff, so it's almost certainly the primary design they want built. Read it top to bottom — don't skim. Then **follow its imports**: open every file it pulls in (shared components, CSS, scripts) so you understand how the pieces fit together before you start implementing.
+## Getting started
 
-**If anything is ambiguous, ask the user to confirm before you start implementing.** It's much cheaper to clarify scope up front than to build the wrong thing.
+```bash
+npm install
+npm run dev        # http://localhost:5173
+npm run build      # typecheck + production build to dist/
+npm run typecheck  # tsc only
+```
 
-## About the design files
+On the lock screen, pick a profile to unlock — the role you choose drives what
+you can see and do:
 
-The design medium is **HTML/CSS/JS** — these are prototypes, not production code. Your job is to **recreate them pixel-perfectly** in whatever technology makes sense for the target codebase (React, Vue, native, whatever fits). Match the visual output; don't copy the prototype's internal structure unless it happens to fit.
+| Profile | Role | Access |
+| --- | --- | --- |
+| Amara Osei, MD | Provider | Full — evaluations, dosing, finalize plans, admin |
+| Jordan Ellis, MA | Clinical staff | Intake, vitals, labs, verification; no dosing, no finalize |
+| Priya Nair | Admin | User management, audit log, lab bundles, backup only |
 
-**Don't render these files in a browser or take screenshots unless the user asks you to.** Everything you need — dimensions, colors, layout rules — is spelled out in the source. Read the HTML and CSS directly; a screenshot won't tell you anything they don't.
+## What's in it
 
-## Bundle contents
+Every screen from the design is built and navigable:
 
-- `README.md` — this file
-- `chats/` — conversation transcripts (read these!)
-- `project/` — the `Olympia Pathways clinical decision support` project files (HTML prototypes, assets, components)
+- **Lock screen** with practice branding, role badges, and an idle auto-lock timer
+- **Patient Board** — ED-tracking-board style, filter by pathway and status
+- **Visits** — per-patient encounters (follow-up, lab review, new encounter)
+- **Intake** — 5 steps; checkbox history/meds; pathway cards (GLP-1 auto-selects
+  Metabolic)
+- **Questionnaires** — TRT / BHRT / Thyroid / Metabolic-GLP-1 / Gut, with
+  per-pathway "administered" toggles and computed scores
+- **Vitals** — auto-calculated BMI, trend sparklines
+- **Labs** — upload → mock local extraction → per-value human verification (with
+  low-confidence flags) → results; plus manual entry
+- **Evaluation** — computed markers, findings, tiered recommendations by pathway,
+  JNC-8 systemic screening driven live from entered vitals, toggleable lab
+  bundles, attestation + provider-only finalize
+- **Metabolic Workup** — provider reference
+- **Talking Points** — metformin / testosterone / GLP-1 start checklists
+- **Visit Summary** — print-ready chart summary
+- **Administration** — users, editable lab bundles, audit log, backup/encryption
+
+Three seeded fictional patients demonstrate the full range (multi-pathway
+GLP-1 + TRT, perimenopausal BHRT, subclinical thyroid + gut).
+
+## Code layout
+
+```
+src/
+  data.ts        Seeded clinical content (patients, questionnaires, labs, evals…)
+  store.ts       App state + class-style setState + auto-lock timer
+  vals.ts        The derived view-model — computes every value + handler the UI reads
+  helpers.ts     Sparkline, chip/level/role color helpers
+  ui.tsx         css() string→style helper + hover-capable <Box>
+  components/    Lock, Header, Sidebar
+  screens/       One component per screen
+```
+
+`vals.ts` is a faithful port of the prototype's single render function; the
+screens are thin and read entirely from it. Prototype state (bundles, added
+users, visits) lives in memory and resets on reload, matching the design's scope.
+
+## Notes
+
+- **No PHI.** All patient data is fictional sample data for the prototype.
+- The design source and conversation transcripts are preserved under
+  `design-source/` for reference.
