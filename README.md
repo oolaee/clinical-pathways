@@ -16,12 +16,19 @@ Running as a plain web app (`npm run dev`) uses seeded sample patients and
 deterministic mocks for those two tasks, so the UI is fully usable without a
 model. The bundled model is used automatically when running the desktop build.
 
+> **Installing on a Mac?** See **[INSTALL.md](./INSTALL.md)** for the full
+> step-by-step (prerequisites → build → install), or just run
+> `scripts/build-macos.sh` on a Mac.
+
 ## Stack
 
-- **React 18 + TypeScript + Vite**
+- **React 18 + TypeScript + Vite**, packaged as a **Tauri v2** macOS app.
 - No UI framework — inline styles ported faithfully from the design so the output
-  is pixel-identical. Fonts (Cormorant Garamond for titles, DM Sans for
-  everything else) load from Google Fonts.
+  is pixel-identical. Fonts (Cormorant Garamond, DM Sans) are **self-hosted**
+  (`src/fonts.css`) so the app makes **zero external requests**.
+- **On-device LLM** bundled in the installer (llama.cpp sidecar + GGUF model).
+- **Encrypted local persistence** (SQLite + AES-256-GCM); data survives restarts
+  and never leaves the machine.
 
 ## Getting started
 
@@ -76,14 +83,18 @@ src/
   helpers.ts     Sparkline, chip/level/role color helpers
   ui.tsx         css() string→style helper + hover-capable <Box>
   ai.ts          Desktop LLM client — invokes the Rust commands, mock fallback
+  db.ts          Desktop persistence client — load/save the encrypted store
+  fonts.css      Self-hosted @font-face (woff2 in src/fonts/)
   components/    Lock, Header, Sidebar
   screens/       One component per screen
 src-tauri/       Tauri v2 desktop shell (Rust)
   src/ai.rs      llama.cpp sidecar lifecycle + extract_labs / draft_summary
+  src/db.rs      Encrypted SQLite store (AES-256-GCM) + db_load / db_save
   binaries/      Bundled llama-server (fetched, gitignored)
   resources/     Bundled GGUF model (fetched, gitignored)
 scripts/
-  fetch-llm.sh   Provisions the runtime + model into the bundle before building
+  fetch-llm.sh     Provisions the runtime + model into the bundle
+  build-macos.sh   One-shot: prereq check → provision → build the app
 ```
 
 `vals.ts` is a faithful port of the prototype's single render function; the
@@ -144,12 +155,13 @@ App icons are generated from `assets/app-icon.svg` → `assets/app-icon.png`;
 regenerate the full platform set with `npm run tauri icon assets/app-icon.png`.
 
 > **Verification status.** This was authored and dependency-checked on Linux,
-> which can't complete a macOS/WebKit build. Verified here: the frontend builds
-> and typechecks; the Rust dependency graph resolves (`Cargo.lock`); and the
-> LLM HTTP/JSON core compiles in isolation. Not yet run on macOS: the full native
-> build, the sidecar launch, and code-signing/notarization. Run
-> `scripts/fetch-llm.sh` then `npm run desktop` on a Mac to bring it up, and
-> expect to iterate on packaging/signing there.
+> which can't complete a macOS/WebKit build. Verified here: the frontend builds,
+> typechecks, and runs with zero external requests; the Rust dependency graph
+> resolves (`Cargo.lock`); and the two backend cores compile/run in isolation —
+> the LLM HTTP/JSON client, and the SQLite + AES-256-GCM encrypt/decrypt
+> round-trip. Not yet run on macOS: the full native build, sidecar launch, first
+> model load, and code-signing/notarization. Run `scripts/build-macos.sh` on a
+> Mac to produce the app, and expect to iterate on packaging/signing there.
 
 ### How the on-device AI is wired
 
@@ -163,17 +175,32 @@ regenerate the full platform set with `npm run tauri icon assets/app-icon.png`.
   seeded mocks are used instead. Model output still requires human verification
   (labs) or provider review (summaries) exactly as the design specifies.
 
-### Roadmap
+### Encrypted persistence
 
-1. **Self-host fonts** — the frontend loads Cormorant Garamond / DM Sans from
-   Google Fonts. For a truly offline app, bundle the `.woff2` files locally and
-   tighten `tauri.conf.json` → `app.security.csp` from `null` to a strict policy.
-   _(Top priority before shipping.)_
-2. **Encrypted SQLite** — add SQLCipher (AES-256) via a Tauri command layer;
-   replace the in-memory store with persistent, encrypted local data.
-3. **Auth & OS keychain** — real login and key storage in the OS keychain.
-4. **Signing & notarization** — Apple Developer ID signing + notarization so the
-   `.dmg` installs cleanly on other Macs.
+Durable clinical state (patients' visits, evaluations, verified labs, plans,
+questionnaire answers, users, lab bundles) is written to a local SQLite file as a
+single **AES-256-GCM–encrypted** document (`src-tauri/src/db.rs`), keyed by a
+`0600` key file in the app-data directory. The frontend loads it on launch and
+saves on change (debounced). In a browser (`npm run dev`) it stays in-memory.
+The app always reopens **locked** — session/role/screen are intentionally not
+persisted.
+
+### Done for shipping ✓
+
+- Self-hosted fonts — zero external requests.
+- On-device LLM bundled into the installer.
+- Encrypted local persistence (AES-256-GCM).
+- macOS build script + [INSTALL.md](./INSTALL.md) runbook.
+
+### Remaining hardening
+
+1. **Move the DB key into the macOS Keychain** (currently a `0600` key file).
+2. **Tighten the CSP** — with fonts local, `app.security.csp` can go from `null`
+   to a strict local policy; test that IPC + inline styles still work on-device.
+3. **Real auth** — per-user PIN/password (hashed in the encrypted store) instead
+   of profile-click unlock.
+4. **Sign & notarize** — Apple Developer ID so the `.dmg` installs without the
+   right-click-to-open step (see INSTALL.md).
 
 ## Notes
 

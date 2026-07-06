@@ -104,17 +104,17 @@ export function Admin({ v }: { v: Vals }) {
           <div style={css('background:#ffffff;border:1px solid #e9e2d8;border-radius:10px;padding:18px 20px')}>
             <div style={css('font-size:13.5px;font-weight:700;margin-bottom:12px')}>Encryption</div>
             <div style={css('display:flex;flex-direction:column;gap:9px;font-size:12.5px;color:#3a382f')}>
-              <div style={css('display:flex;justify-content:space-between')}><span style={css('color:#7d715f')}>Database</span><b>SQLite · SQLCipher AES-256</b></div>
-              <div style={css('display:flex;justify-content:space-between')}><span style={css('color:#7d715f')}>Key storage</span><b>OS keychain</b></div>
+              <div style={css('display:flex;justify-content:space-between')}><span style={css('color:#7d715f')}>Database</span><b>SQLite · AES-256-GCM</b></div>
+              <div style={css('display:flex;justify-content:space-between')}><span style={css('color:#7d715f')}>Key storage</span><b>Local keystore · 0600</b></div>
               <div style={css('display:flex;justify-content:space-between')}><span style={css('color:#7d715f')}>At-rest status</span><b style={css('color:#4f7355')}>Encrypted</b></div>
-              <div style={css('display:flex;justify-content:space-between')}><span style={css('color:#7d715f')}>Network access</span><b style={css('color:#4f7355')}>None — fully local</b></div>
+              <div style={css('display:flex;justify-content:space-between')}><span style={css('color:#7d715f')}>Network access</span><b style={css('color:#4f7355')}>None — fully on-device</b></div>
             </div>
           </div>
           <div style={css('background:#ffffff;border:1px solid #e9e2d8;border-radius:10px;padding:18px 20px')}>
             <div style={css('font-size:13.5px;font-weight:700;margin-bottom:12px')}>Backups</div>
             <div style={css('display:flex;flex-direction:column;gap:9px;font-size:12.5px;color:#3a382f')}>
               <div style={css('display:flex;justify-content:space-between')}><span style={css('color:#7d715f')}>Last backup</span><b style={css('color:#4f7355')}>Today · 06:00 — verified</b></div>
-              <div style={css('display:flex;justify-content:space-between')}><span style={css('color:#7d715f')}>Destination</span><b>D:\OlympiaBackups (local drive)</b></div>
+              <div style={css('display:flex;justify-content:space-between')}><span style={css('color:#7d715f')}>Destination</span><b>~/Library/Application Support</b></div>
               <div style={css('display:flex;justify-content:space-between')}><span style={css('color:#7d715f')}>Schedule</span><b>Daily · 30-day retention</b></div>
             </div>
             <Box onClick={v.onBackup} s="margin-top:14px;font-size:12.5px;font-weight:600;padding:8px 0;border-radius:8px;cursor:pointer;background:#171810;color:#fcfbfb;text-align:center" hover="background:#33342a">{v.backupLabel}</Box>

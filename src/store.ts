@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { CONFIG, INITIAL_BUNDLES, INITIAL_USERS, type Bundle, type User, type VerifyRow } from './data'
 import type { RoleKey } from './helpers'
+import { IS_DESKTOP } from './ai'
+import { dbLoad, dbSave } from './db'
 
 /** Everything in the prototype's `Component.state`, typed. */
 export type AppState = {
@@ -111,6 +113,18 @@ export function lockMax(): number {
   return (CONFIG.autoLockMinutes ?? 15) * 60
 }
 
+/**
+ * Durable state that persists to the encrypted store between launches. Transient
+ * session/UI fields (lock, role, current screen, timers, in-flight AI) are
+ * intentionally excluded so the app always reopens locked and at a clean start.
+ */
+const PERSIST_KEYS: (keyof AppState)[] = [
+  'pid', 'intakePaths', 'ikChecks', 'answers', 'qEnabled', 'vits',
+  'manual', 'manualSaved', 'bundleOn', 'labOff', 'manualLabs',
+  'attested', 'finalized', 'tpChecked', 'tpSaved', 'backupDone',
+  'activeVisit', 'visitsByPatient', 'users', 'bundles',
+]
+
 /** Store hook: mirrors React class `setState` (shallow merge) + the auto-lock timer. */
 export function useStore(): Store {
   const [state, setRaw] = useState<AppState>(initialState)
@@ -136,6 +150,40 @@ export function useStore(): Store {
     }, 1000)
     return () => clearInterval(t)
   }, [])
+
+  // Hydrate durable state from the encrypted store on launch (desktop only).
+  const loaded = useRef(false)
+  useEffect(() => {
+    if (!IS_DESKTOP) return
+    dbLoad().then((doc) => {
+      if (doc) {
+        try {
+          const saved = JSON.parse(doc) as Partial<AppState>
+          setRaw((prev) => {
+            const next = { ...prev }
+            for (const k of PERSIST_KEYS) {
+              if (k in saved) (next as Record<string, unknown>)[k] = (saved as Record<string, unknown>)[k]
+            }
+            return next
+          })
+        } catch (e) {
+          console.error('could not parse saved state:', e)
+        }
+      }
+      loaded.current = true
+    })
+  }, [])
+
+  // Persist durable state on change (debounced), once the initial load is done.
+  useEffect(() => {
+    if (!IS_DESKTOP || !loaded.current) return
+    const id = setTimeout(() => {
+      const subset: Record<string, unknown> = {}
+      for (const k of PERSIST_KEYS) subset[k] = state[k]
+      void dbSave(JSON.stringify(subset))
+    }, 600)
+    return () => clearTimeout(id)
+  }, [state])
 
   return { state, setState, stateRef, timers }
 }
