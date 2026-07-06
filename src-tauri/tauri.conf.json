@@ -1,0 +1,43 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Clinical Pathways",
+  "version": "1.4.2",
+  "identifier": "com.olympia.clinical-pathways",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Clinical Pathways — Olympia",
+        "width": 1280,
+        "height": 840,
+        "minWidth": 1024,
+        "minHeight": 700,
+        "resizable": true,
+        "center": true
+      }
+    ],
+    "security": {
+      "comment": "null CSP keeps dev/HMR and the Google Fonts CDN working. Before shipping, self-host the fonts (see README) and tighten this to a strict local policy.",
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Medical",
+    "shortDescription": "Clinical decision support",
+    "longDescription": "Provider-facing clinical decision support for Olympia Aesthetics & Wellness. Fully local — no cloud.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

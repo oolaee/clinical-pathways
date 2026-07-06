@@ -6,3 +6,7 @@ dist-ssr
 .DS_Store
 *.log
 *.tsbuildinfo
+
+# Tauri / Rust
+src-tauri/target
+src-tauri/gen
