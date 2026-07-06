@@ -31,6 +31,14 @@ export function Labs({ v }: { v: Vals }) {
           <div style={css('margin-top:14px;font-size:12px;color:#8a7a66;display:flex;align-items:center;gap:8px')}>
             <div style={css('width:6px;height:6px;border-radius:50%;background:#4f7355')}></div>No file ever leaves this machine. Extraction runs on the local model.
           </div>
+          {v.isDesktop && (
+            <div style={css('margin-top:16px;display:flex;align-items:center;gap:12px')}>
+              <div onClick={v.onExtractAI} style={css(`font-size:12.5px;font-weight:700;padding:9px 16px;border-radius:8px;background:#171810;color:#fcfbfb;cursor:${v.aiBusy ? 'default' : 'pointer'};opacity:${v.aiBusy ? '0.6' : '1'}`)}>
+                {v.aiBusy ? 'Extracting on-device…' : 'Extract with on-device model'}
+              </div>
+              <div style={css('font-size:11.5px;color:#8a7a66')}>Runs the bundled local model — results still require per-value verification.</div>
+            </div>
+          )}
         </>
       )}
 

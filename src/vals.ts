@@ -23,6 +23,7 @@ import {
 } from './data'
 import { chip, lvl, roleMetaOf, sparkline } from './helpers'
 import { lockMax, type Store } from './store'
+import { IS_DESKTOP, extractLabs } from './ai'
 
 export function computeVals(store: Store) {
   const { state: S, setState, timers } = store
@@ -254,10 +255,12 @@ export function computeVals(store: Store) {
     return { a: m.a, v: m.v, u: m.u, r: m.r, onA: (e: { target: { value: string } }) => set('a', e.target.value), onV: (e: { target: { value: string } }) => set('v', e.target.value), onU: (e: { target: { value: string } }) => set('u', e.target.value), onR: (e: { target: { value: string } }) => set('r', e.target.value) }
   })
   const manualReady = S.manual.some((m) => m.a && m.v)
+  // On-device extraction results replace the seeded sample once available.
+  const labSource = S.aiLabs ?? VERIFY
   const confirmed = (i: number) => !!S.conf[i]
-  const vConfirmed = VERIFY.reduce((a, _, i) => a + (confirmed(i) ? 1 : 0), 0)
-  const allConf = vConfirmed === VERIFY.length
-  const verifyRows = VERIFY.map((r, i) => {
+  const vConfirmed = labSource.reduce((a, _, i) => a + (confirmed(i) ? 1 : 0), 0)
+  const allConf = vConfirmed === labSource.length
+  const verifyRows = labSource.map((r, i) => {
     const low = r.conf === 'low'
     const ok = confirmed(i)
     return {
@@ -270,7 +273,7 @@ export function computeVals(store: Store) {
       on: () => setState({ conf: { ...S.conf, [i]: !ok } }),
     }
   })
-  const pdfLines = VERIFY.map((r) => ({ a: r.a, v: r.v + ' ' + r.u + (r.flag ? '  ' + r.flag : ''), w: r.flag ? 700 : 400, bg: r.conf === 'low' ? '#f3e8d3' : 'transparent' }))
+  const pdfLines = labSource.map((r) => ({ a: r.a, v: r.v + ' ' + r.u + (r.flag ? '  ' + r.flag : ''), w: r.flag ? 700 : 400, bg: r.conf === 'low' ? '#f3e8d3' : 'transparent' }))
   let panels = (PANELS[S.pid] || []).slice() as { panel: string; date: string; rows: { a: string; v: string; u: string; r?: string; range?: string; flag: string; hist: number[] | null }[] }[]
   if (S.manualSaved[S.pid]) panels = panels.concat([{ panel: 'Manual entry', date: 'Entered today · human-entered', rows: S.manual.filter((m) => m.a && m.v).map((m) => ({ a: m.a, v: m.v, u: m.u, r: m.r || '—', flag: '', hist: null })) }])
   const resultPanels = panels.map((p) => ({
@@ -413,7 +416,7 @@ export function computeVals(store: Store) {
   const activeVisitLabel = 'Visit · ' + activeVObj.date
 
   const onUpload = () => {
-    setState({ labView: 'processing', procPct: 0, procMsg: 'Reading page 1 of 2…' })
+    setState({ labView: 'processing', procPct: 0, procMsg: 'Reading page 1 of 2…', aiLabs: null })
     if (timers.p) clearInterval(timers.p)
     timers.p = setInterval(() => {
       setState((prev) => {
@@ -478,8 +481,22 @@ export function computeVals(store: Store) {
     pdfFile: isDraft ? 'uploaded-labs.pdf' : 'labs-' + P.name.split(' ')[1].toLowerCase() + '.pdf',
     onUpload,
     procW: S.procPct + '%', procMsg: S.procMsg,
-    verifyRows, pdfLines, vConfirmed, vTotal: VERIFY.length,
-    hcCount: VERIFY.filter((r) => r.conf === 'high').length,
+    verifyRows, pdfLines, vConfirmed, vTotal: labSource.length,
+    hcCount: labSource.filter((r) => r.conf === 'high').length,
+    // On-device AI extraction (desktop only; browser keeps the mock upload).
+    isDesktop: IS_DESKTOP, aiBusy: S.aiBusy, aiModel: !!S.aiLabs,
+    onExtractAI: async () => {
+      if (S.aiBusy) return
+      setState({ aiBusy: true })
+      const text = 'LABORATORY REPORT\n' + VERIFY.map((r) => `${r.a}: ${r.v} ${r.u}${r.flag ? ' ' + r.flag : ''} (ref ${r.r})`).join('\n')
+      try {
+        const rows = await extractLabs(text)
+        setState({ aiLabs: rows.length ? rows : VERIFY, conf: {}, aiBusy: false, labView: 'verify' })
+      } catch (e) {
+        setState({ aiBusy: false })
+        console.error('on-device extraction failed:', e)
+      }
+    },
     onConfirmAll: () => { const c = { ...S.conf }; VERIFY.forEach((r, i) => { if (r.conf === 'high') c[i] = true }); setState({ conf: c }) },
     addBg: allConf ? '#4f7355' : '#efece6', addC: allConf ? '#ffffff' : '#a19b8e', addCur: allConf ? 'pointer' : 'default',
     onAddRecord: () => { if (allConf) setState({ labView: 'results' }) },

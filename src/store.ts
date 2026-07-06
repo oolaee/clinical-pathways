@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { CONFIG, INITIAL_BUNDLES, INITIAL_USERS, type Bundle, type User } from './data'
+import { CONFIG, INITIAL_BUNDLES, INITIAL_USERS, type Bundle, type User, type VerifyRow } from './data'
 import type { RoleKey } from './helpers'
 
 /** Everything in the prototype's `Component.state`, typed. */
@@ -21,6 +21,10 @@ export type AppState = {
   labView: string
   procPct: number
   procMsg: string
+  /** Analytes extracted by the on-device model; null → use the seeded sample set. */
+  aiLabs: VerifyRow[] | null
+  /** On-device extraction is running. */
+  aiBusy: boolean
   conf: Record<number, boolean>
   manual: { a: string; v: string; u: string; r: string }[]
   manualSaved: Record<number, boolean>
@@ -61,6 +65,8 @@ export const initialState: AppState = {
   labView: 'upload',
   procPct: 0,
   procMsg: 'Reading page 1 of 2…',
+  aiLabs: null,
+  aiBusy: false,
   conf: {},
   manual: [
     { a: '', v: '', u: '', r: '' },

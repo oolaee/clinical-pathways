@@ -12,6 +12,7 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "Clinical Pathways — Olympia",
         "width": 1280,
         "height": 840,
@@ -31,13 +32,18 @@
     "targets": "all",
     "category": "Medical",
     "shortDescription": "Clinical decision support",
-    "longDescription": "Provider-facing clinical decision support for Olympia Aesthetics & Wellness. Fully local — no cloud.",
+    "longDescription": "Provider-facing clinical decision support for Olympia Aesthetics & Wellness. Fully local, on-device AI — no cloud.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "externalBin": ["binaries/llama-server"],
+    "resources": ["resources/models/*.gguf"],
+    "macOS": {
+      "minimumSystemVersion": "11.0"
+    }
   }
 }

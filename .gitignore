@@ -10,3 +10,9 @@ dist-ssr
 # Tauri / Rust
 src-tauri/target
 src-tauri/gen
+
+# Bundled LLM artifacts (fetched by scripts/fetch-llm.sh at build time)
+src-tauri/binaries/*
+!src-tauri/binaries/.gitkeep
+src-tauri/resources/models/*
+!src-tauri/resources/models/.gitkeep
