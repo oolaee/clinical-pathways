@@ -16,3 +16,6 @@ src-tauri/binaries/*
 !src-tauri/binaries/.gitkeep
 src-tauri/resources/models/*
 !src-tauri/resources/models/.gitkeep
+
+# Updater signing key — regenerate for production, never commit
+.secrets/

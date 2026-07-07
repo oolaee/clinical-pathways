@@ -39,11 +39,42 @@ case "$OS" in
 esac
 echo "==> Target triple: $TRIPLE"
 
-# --- Default model: Qwen2.5-3B-Instruct (Apache-2.0 — redistributable) ----------
-# ~2.0 GB Q4_K_M. Big enough for lab extraction + summary drafting, small enough
-# to bundle. Swap MODEL_URL/MODEL_FILE for a different model or quant.
-MODEL_URL="${MODEL_URL:-https://huggingface.co/bartowski/Qwen2.5-3B-Instruct-GGUF/resolve/main/Qwen2.5-3B-Instruct-Q4_K_M.gguf}"
-MODEL_FILE="${MODEL_FILE:-Qwen2.5-3B-Instruct-Q4_K_M.gguf}"
+# --- Model selection -----------------------------------------------------------
+# Pick a preset with MODEL_PRESET=… (sized by the Mac's RAM), or override the URL
+# directly with MODEL_URL=… MODEL_FILE=…. All are Q4_K_M GGUF.
+#
+#   preset          model                         ~size   min RAM  license       notes
+#   medgemma-27b    MedGemma 27B (Google, med)    ~16 GB  32 GB    HAI-DEF*      strongest medical
+#   openbio-8b      OpenBioLLM-8B (Llama-3, med)  ~5 GB   16 GB    Llama-3*      strong medical, small
+#   meditron-8b     Meditron-3 8B (Llama-3.1,med) ~5 GB   16 GB    Llama-3.1*    clinical guidelines
+#   biomistral-7b   BioMistral-7B (med)           ~4.5 GB 16 GB    Apache-2.0    medical + permissive
+#   medgemma-4b     MedGemma 4B (Google, med)     ~3 GB   16 GB    HAI-DEF*      lightest medical
+#   qwen-14b        Qwen2.5-14B-Instruct (gen)    ~9 GB   32 GB    Apache-2.0    best general reasoning
+#   qwen-7b         Qwen2.5-7B-Instruct (gen)     ~4.7GB  16 GB    Apache-2.0    strong general (default)
+#   qwen-3b         Qwen2.5-3B-Instruct (gen)     ~2 GB   8 GB     Apache-2.0    smallest; fits GitHub Releases
+#
+# *License note: medical fine-tunes on Llama / Gemma inherit those base-model
+#  license terms. For a commercial product confirm the terms; the Apache-2.0
+#  options (biomistral-7b, qwen-*) are the cleanest to redistribute.
+#
+# URLs are best-effort pointers to current GGUF conversions. If one 404s, find
+# the model on huggingface.co and pass MODEL_URL/MODEL_FILE explicitly.
+MODEL_PRESET="${MODEL_PRESET:-qwen-7b}"
+HF="https://huggingface.co"
+case "$MODEL_PRESET" in
+  medgemma-27b)  DEF_URL="$HF/unsloth/medgemma-27b-text-it-GGUF/resolve/main/medgemma-27b-text-it-Q4_K_M.gguf"; DEF_FILE="medgemma-27b-text-it-Q4_K_M.gguf" ;;
+  medgemma-4b)   DEF_URL="$HF/unsloth/medgemma-4b-it-GGUF/resolve/main/medgemma-4b-it-Q4_K_M.gguf";             DEF_FILE="medgemma-4b-it-Q4_K_M.gguf" ;;
+  openbio-8b)    DEF_URL="$HF/mradermacher/Llama3-OpenBioLLM-8B-GGUF/resolve/main/Llama3-OpenBioLLM-8B.Q4_K_M.gguf"; DEF_FILE="Llama3-OpenBioLLM-8B.Q4_K_M.gguf" ;;
+  meditron-8b)   DEF_URL="$HF/mradermacher/Meditron3-8B-GGUF/resolve/main/Meditron3-8B.Q4_K_M.gguf";            DEF_FILE="Meditron3-8B.Q4_K_M.gguf" ;;
+  biomistral-7b) DEF_URL="$HF/MaziyarPanahi/BioMistral-7B-GGUF/resolve/main/BioMistral-7B.Q4_K_M.gguf";         DEF_FILE="BioMistral-7B.Q4_K_M.gguf" ;;
+  qwen-14b)      DEF_URL="$HF/bartowski/Qwen2.5-14B-Instruct-GGUF/resolve/main/Qwen2.5-14B-Instruct-Q4_K_M.gguf"; DEF_FILE="Qwen2.5-14B-Instruct-Q4_K_M.gguf" ;;
+  qwen-7b)       DEF_URL="$HF/bartowski/Qwen2.5-7B-Instruct-GGUF/resolve/main/Qwen2.5-7B-Instruct-Q4_K_M.gguf";  DEF_FILE="Qwen2.5-7B-Instruct-Q4_K_M.gguf" ;;
+  qwen-3b)       DEF_URL="$HF/bartowski/Qwen2.5-3B-Instruct-GGUF/resolve/main/Qwen2.5-3B-Instruct-Q4_K_M.gguf";  DEF_FILE="Qwen2.5-3B-Instruct-Q4_K_M.gguf" ;;
+  *) echo "Unknown MODEL_PRESET '$MODEL_PRESET' (see the table in this script)." >&2; exit 1 ;;
+esac
+MODEL_URL="${MODEL_URL:-$DEF_URL}"
+MODEL_FILE="${MODEL_FILE:-$DEF_FILE}"
+echo "==> Model preset: $MODEL_PRESET → $MODEL_FILE"
 
 # --- 1. Build a static llama-server --------------------------------------------
 SERVER_OUT="$BIN_DIR/llama-server-$TRIPLE"

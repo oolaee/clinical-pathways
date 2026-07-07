@@ -1,0 +1,87 @@
+name: Release (macOS · signed · auto-update)
+
+# Push a tag like v1.4.3 (or run manually) to build a signed, notarized macOS
+# app, sign it for the updater, and publish a GitHub Release with latest.json.
+# Installed apps pick it up automatically on next launch.
+#
+# Required repo secrets (Settings → Secrets and variables → Actions):
+#   Apple signing / notarization (same identity as Prescription Write Pro):
+#     APPLE_CERTIFICATE            base64 of your Developer ID Application .p12
+#     APPLE_CERTIFICATE_PASSWORD   password for that .p12
+#     APPLE_SIGNING_IDENTITY       e.g. "Developer ID Application: Name (TEAMID)"
+#     APPLE_ID                     your Apple ID email
+#     APPLE_PASSWORD               app-specific password for notarization
+#     APPLE_TEAM_ID                your 10-char Team ID
+#   Updater signing (from `npm run tauri signer generate`):
+#     TAURI_SIGNING_PRIVATE_KEY           contents of .secrets/updater.key
+#     TAURI_SIGNING_PRIVATE_KEY_PASSWORD  its password ("" if none)
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: macos-14 # Apple Silicon
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install build tools
+        run: brew install cmake
+
+      # The bundled model rarely changes — cache it so releases are fast and we
+      # don't re-download multiple GB every time.
+      - name: Cache on-device model + runtime
+        uses: actions/cache@v4
+        with:
+          path: |
+            src-tauri/binaries
+            src-tauri/resources/models
+          key: llm-${{ hashFiles('scripts/fetch-llm.sh') }}-${{ env.MODEL_PRESET || 'default' }}
+
+      - name: Provision on-device LLM (runtime + model)
+        run: bash scripts/fetch-llm.sh
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Build, sign, notarize, publish
+        uses: tauri-apps/tauri-action@v0
+        env:
+          # Apple signing + notarization
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # Updater artifact signing
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "Clinical Pathways ${{ github.ref_name }}"
+          releaseBody: "Automated signed release. Installed apps update on next launch."
+          releaseDraft: false
+          prerelease: false
+          includeUpdaterJson: true
+          # Merge the release-only override that emits signed updater artifacts.
+          args: --config src-tauri/tauri.release.conf.json
+
+# NOTE ON HOSTING / SIZE:
+# GitHub Releases caps a single asset at 2 GB. With the model bundled, the .dmg
+# can exceed that (esp. larger medical models). If so, host releases where
+# Prescription Write Pro does (e.g. S3 / your server) and point the updater
+# `endpoints` in tauri.conf.json there instead — the rest of this pipeline is
+# identical. See README → "Auto-updates & releases".

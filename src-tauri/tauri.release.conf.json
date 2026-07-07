@@ -1,0 +1,7 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "comment": "Release-only overrides, merged in CI: emit signed updater artifacts (.app.tar.gz + .sig). Requires TAURI_SIGNING_PRIVATE_KEY at build time. Local installs (build-macos.sh) don't use this file, so they don't need the key.",
+    "createUpdaterArtifacts": true
+  }
+}

@@ -1,5 +1,7 @@
+import { useEffect } from 'react'
 import { useStore } from './store'
 import { computeVals } from './vals'
+import { checkForUpdates } from './updater'
 import { css } from './ui'
 import { Lock } from './components/Lock'
 import { Header } from './components/Header'
@@ -19,6 +21,11 @@ import { Admin } from './screens/Admin'
 export function App() {
   const store = useStore()
   const v = computeVals(store)
+
+  // Check for a signed update on launch (desktop only; no-op in the browser).
+  useEffect(() => {
+    void checkForUpdates()
+  }, [])
 
   if (v.locked) return <Lock v={v} />
 

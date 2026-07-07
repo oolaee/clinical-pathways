@@ -45,5 +45,14 @@
     "macOS": {
       "minimumSystemVersion": "11.0"
     }
+  },
+  "plugins": {
+    "updater": {
+      "comment": "Installed apps check this endpoint on launch and auto-update. Point it at wherever releases are hosted (default: GitHub Releases of this repo). Replace pubkey with your own from `npm run tauri signer generate` before shipping.",
+      "endpoints": [
+        "https://github.com/oolaee/clinical-pathways/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDVEQUE1OUE0RjU4MDU1OUYKUldTZlZZRDFwRm1xWGRIYmQ0WVRyNHBiOW1yNW0vTzRJVlhGdDZlL0dLR1dlNTB6ZVZjcHBNMlYK"
+    }
   }
 }

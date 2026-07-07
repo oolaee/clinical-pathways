@@ -91,6 +91,15 @@ the machine.
 
 ---
 
+## Staying up to date (automatic)
+
+Once installed, the app **checks for an update every time it launches** and
+installs it silently, then reopens on the new version — no manual reinstalls. New
+versions are shipped by pushing a git tag, which triggers the signed-release CI
+(`.github/workflows/release.yml`); see the README → "Auto-updates & releases" for
+the one-time secret setup (it uses the same Apple Developer ID as Prescription
+Write Pro).
+
 ## Optional: sign & notarize (for clean install on many Macs)
 
 The right-click-to-open step above is only needed for unsigned builds. To hand

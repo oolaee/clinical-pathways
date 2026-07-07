@@ -134,12 +134,29 @@ bundled into the `.app` by Tauri and never fetched at runtime. Requires Xcode
 Command Line Tools + `cmake`. Neither artifact is committed (they're large and
 gitignored).
 
-**Default model:** `Qwen2.5-3B-Instruct` (Q4_K_M, ~2 GB, **Apache-2.0** — safe to
-redistribute in a commercial product). Swap it with
-`MODEL_URL=… MODEL_FILE=… scripts/fetch-llm.sh`. **Confirm the model license
-before shipping** — for a commercial medical product, prefer a permissive
-(Apache-2.0 / MIT) model; note that some popular models (e.g. Llama) carry
-use-based license terms.
+**Model presets.** Pick by the Mac's RAM with `MODEL_PRESET=… scripts/fetch-llm.sh`
+(default `qwen-7b`). Medical-tuned and general options:
+
+| preset | model | ~size | min RAM | license |
+| --- | --- | --- | --- | --- |
+| `medgemma-27b` | MedGemma 27B (Google, medical) | ~16 GB | 32 GB | HAI-DEF* |
+| `openbio-8b` | OpenBioLLM-8B (Llama-3, medical) | ~5 GB | 16 GB | Llama-3* |
+| `meditron-8b` | Meditron-3 8B (Llama-3.1, medical) | ~5 GB | 16 GB | Llama-3.1* |
+| `biomistral-7b` | BioMistral-7B (medical) | ~4.5 GB | 16 GB | Apache-2.0 |
+| `medgemma-4b` | MedGemma 4B (Google, medical) | ~3 GB | 16 GB | HAI-DEF* |
+| `qwen-14b` | Qwen2.5-14B (general reasoning) | ~9 GB | 32 GB | Apache-2.0 |
+| `qwen-7b` | Qwen2.5-7B (general, **default**) | ~4.7 GB | 16 GB | Apache-2.0 |
+| `qwen-3b` | Qwen2.5-3B (smallest) | ~2 GB | 8 GB | Apache-2.0 |
+
+\*Medical fine-tunes inherit their base model's license — confirm the terms for a
+commercial product. The Apache-2.0 rows are cleanest to redistribute. Or point at
+any GGUF with `MODEL_URL=… MODEL_FILE=…`.
+
+> **Safety scope.** By design the deterministic rules engine — not the model — is
+> the clinical decision authority. The LLM assists (lab extraction, drafting,
+> surfacing considerations) and every output is provider-reviewed. Keep it in that
+> assistive role; using an LLM for autonomous medical decisions carries real
+> regulatory/liability implications.
 
 ### Run / build
 
@@ -175,6 +192,32 @@ regenerate the full platform set with `npm run tauri icon assets/app-icon.png`.
   seeded mocks are used instead. Model output still requires human verification
   (labs) or provider review (summaries) exactly as the design specifies.
 
+### Auto-updates & releases
+
+Installed apps check for a signed update on launch and install it automatically
+(`src/updater.ts` → Tauri updater plugin). Releases are produced by the
+**`.github/workflows/release.yml`** GitHub Action: push a tag and CI builds,
+**Apple-signs + notarizes**, **updater-signs**, and publishes a GitHub Release
+with `latest.json`.
+
+```bash
+# cut a release (after setting the repo secrets below)
+git tag v1.4.3 && git push origin v1.4.3
+```
+
+Required repo secrets (Settings → Secrets and variables → Actions): the Apple
+Developer ID set (`APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`,
+`APPLE_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID`) — the
+**same identity you already use for Prescription Write Pro** — plus the updater
+key (`TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`) from
+`npm run tauri signer generate`.
+
+The updater public key and endpoint live in `tauri.conf.json`. The endpoint
+defaults to this repo's GitHub Releases; **note GitHub caps a release asset at
+2 GB**, so if the bundled model pushes the `.dmg` over that, host releases where
+Prescription Write Pro does and change the endpoint (the pipeline is otherwise
+identical).
+
 ### Encrypted persistence
 
 Durable clinical state (patients' visits, evaluations, verified labs, plans,
@@ -188,8 +231,9 @@ persisted.
 ### Done for shipping ✓
 
 - Self-hosted fonts — zero external requests.
-- On-device LLM bundled into the installer.
+- On-device LLM bundled into the installer (selectable medical/general models).
 - Encrypted local persistence (AES-256-GCM).
+- Signed + notarized releases with **auto-update on launch** (CI workflow).
 - macOS build script + [INSTALL.md](./INSTALL.md) runbook.
 
 ### Remaining hardening
@@ -197,10 +241,8 @@ persisted.
 1. **Move the DB key into the macOS Keychain** (currently a `0600` key file).
 2. **Tighten the CSP** — with fonts local, `app.security.csp` can go from `null`
    to a strict local policy; test that IPC + inline styles still work on-device.
-3. **Real auth** — per-user PIN/password (hashed in the encrypted store) instead
-   of profile-click unlock.
-4. **Sign & notarize** — Apple Developer ID so the `.dmg` installs without the
-   right-click-to-open step (see INSTALL.md).
+
+_Single-user by design for now — multi-user PIN/password auth is deferred._
 
 ## Notes
 
