@@ -139,14 +139,17 @@ gitignored).
 
 | preset | model | ~size | min RAM | license |
 | --- | --- | --- | --- | --- |
-| `medgemma-27b` | MedGemma 27B (Google, medical) | ~16 GB | 32 GB | HAI-DEF* |
-| `openbio-8b` | OpenBioLLM-8B (Llama-3, medical) | ~5 GB | 16 GB | Llama-3* |
+| `medgemma-27b` | MedGemma 27B (Google, medical) — strongest | ~16 GB | 32 GB | HAI-DEF* |
+| `openbio-8b` | OpenBioLLM-8B (Llama-3, medical) — **default** | ~5 GB | 16 GB | Llama-3* |
 | `meditron-8b` | Meditron-3 8B (Llama-3.1, medical) | ~5 GB | 16 GB | Llama-3.1* |
 | `biomistral-7b` | BioMistral-7B (medical) | ~4.5 GB | 16 GB | Apache-2.0 |
 | `medgemma-4b` | MedGemma 4B (Google, medical) | ~3 GB | 16 GB | HAI-DEF* |
 | `qwen-14b` | Qwen2.5-14B (general reasoning) | ~9 GB | 32 GB | Apache-2.0 |
-| `qwen-7b` | Qwen2.5-7B (general, **default**) | ~4.7 GB | 16 GB | Apache-2.0 |
+| `qwen-7b` | Qwen2.5-7B (general) | ~4.7 GB | 16 GB | Apache-2.0 |
 | `qwen-3b` | Qwen2.5-3B (smallest) | ~2 GB | 8 GB | Apache-2.0 |
+
+The default (`openbio-8b`) is the best medical model that runs on a standard
+16 GB Mac. On a **32 GB+** Mac use the strongest: `MODEL_PRESET=medgemma-27b`.
 
 \*Medical fine-tunes inherit their base model's license — confirm the terms for a
 commercial product. The Apache-2.0 rows are cleanest to redistribute. Or point at

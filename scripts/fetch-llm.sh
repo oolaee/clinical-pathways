@@ -45,12 +45,12 @@ echo "==> Target triple: $TRIPLE"
 #
 #   preset          model                         ~size   min RAM  license       notes
 #   medgemma-27b    MedGemma 27B (Google, med)    ~16 GB  32 GB    HAI-DEF*      strongest medical
-#   openbio-8b      OpenBioLLM-8B (Llama-3, med)  ~5 GB   16 GB    Llama-3*      strong medical, small
+#   openbio-8b      OpenBioLLM-8B (Llama-3, med)  ~5 GB   16 GB    Llama-3*      strong medical, small (DEFAULT)
 #   meditron-8b     Meditron-3 8B (Llama-3.1,med) ~5 GB   16 GB    Llama-3.1*    clinical guidelines
 #   biomistral-7b   BioMistral-7B (med)           ~4.5 GB 16 GB    Apache-2.0    medical + permissive
 #   medgemma-4b     MedGemma 4B (Google, med)     ~3 GB   16 GB    HAI-DEF*      lightest medical
 #   qwen-14b        Qwen2.5-14B-Instruct (gen)    ~9 GB   32 GB    Apache-2.0    best general reasoning
-#   qwen-7b         Qwen2.5-7B-Instruct (gen)     ~4.7GB  16 GB    Apache-2.0    strong general (default)
+#   qwen-7b         Qwen2.5-7B-Instruct (gen)     ~4.7GB  16 GB    Apache-2.0    strong general
 #   qwen-3b         Qwen2.5-3B-Instruct (gen)     ~2 GB   8 GB     Apache-2.0    smallest; fits GitHub Releases
 #
 # *License note: medical fine-tunes on Llama / Gemma inherit those base-model
@@ -59,7 +59,7 @@ echo "==> Target triple: $TRIPLE"
 #
 # URLs are best-effort pointers to current GGUF conversions. If one 404s, find
 # the model on huggingface.co and pass MODEL_URL/MODEL_FILE explicitly.
-MODEL_PRESET="${MODEL_PRESET:-qwen-7b}"
+MODEL_PRESET="${MODEL_PRESET:-openbio-8b}"
 HF="https://huggingface.co"
 case "$MODEL_PRESET" in
   medgemma-27b)  DEF_URL="$HF/unsloth/medgemma-27b-text-it-GGUF/resolve/main/medgemma-27b-text-it-Q4_K_M.gguf"; DEF_FILE="medgemma-27b-text-it-Q4_K_M.gguf" ;;
